@@ -1,0 +1,52 @@
+resource_types:
+- name: github-webhook-resource
+  type: docker-image
+  source:
+    repository: homedepottech/github-webhook-resource
+    tag: latest
+
+
+
+resources:
+- name: concourse-ci-test
+  type: git
+  icon: github
+  source:
+    uri: git@github.com:tgolsson/concourse-ci-test.git
+
+  webhook_token: concourse-ci-test
+
+
+- name: github-webhook
+  type: github-webhook-resource
+  source:
+    github_api: https://api.github.com/repos/tgolsson/concourse-ci-test
+    github_token: ((github-webhook-token))
+
+jobs:
+
+- name: configure-self
+  plan:
+  - put: create-webhook
+    resource: github-webhook
+    params:
+      org: tgolsson
+      repo: concourse-ci-test
+      resource_name: concourse-ci-test
+      webhook_token: concourse-ci-test
+      operation: create
+      events: [push, pull_request]
+
+  - get: concourse-ci-test
+    trigger: true
+
+  - set_pipeline: self
+    file: .concourse/reconfigure-pipelines.yml
+
+- name: configure-pipelines
+  plan:
+  - get: concourse-ci-test
+    trigger: true
+    passed: [configure-self]
+  - set_pipeline: some-pipeline
+    file: .concourse/hello-world.yml
