@@ -21,7 +21,6 @@ resources:
     github_token: ((github-token))
 
 jobs:
-
 - name: configure-self
   plan:
   - put: create-webhook
@@ -43,7 +42,6 @@ jobs:
 - name: configure-pipelines
   plan:
   - get: concourse-ci-test
-    trigger: true
     passed: [configure-self]
   - set_pipeline: some-pipeline
     file: concourse-ci-test/.concourse/hello-world.yml
