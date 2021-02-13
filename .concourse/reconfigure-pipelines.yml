@@ -1,10 +1,28 @@
+meta:
+  gh-status_handlers: &gh-status-handlers
+    on_success:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: {state: success}
+    on_failure:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: {state: failure}
+    on_error:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: {state: error}
+
+
 resource_types:
+# This manages the top-level webhook trigger
 - name: github-webhook-resource
   type: registry-image
   source:
     repository: homedepottech/github-webhook-resource
     tag: latest
 
+# This manages the GitHub status lines
 - name: cogito
   type: registry-image
   check_every: 1h
@@ -13,14 +31,17 @@ resource_types:
 
 
 resources:
+# This is our Git Repository
 - name: concourse-ci-test
   type: git
   icon: github
   source:
     uri: https://github.com/tgolsson/concourse-ci-test
 
+  # NOT a secret, used to map webhooks -> checks
   webhook_token: concourse-ci-test
 
+# This is the status object that will be updated in each job
 - name: gh-status
   type: cogito
   check_every: 1h
@@ -29,27 +50,17 @@ resources:
     repo: concourse-ci-test
     access_token: ((status-token))
 
+# This is the webhook resource that we'll set each time
 - name: github-webhook
   type: github-webhook-resource
   source:
     github_api: https://api.github.com
     github_token: ((webhook-token))
 
+# These are the jobs that run in parallel
 jobs:
-- name: configure-self
-  on_success:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: success}
-  on_failure:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: failure}
-  on_error:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: error}
-
+- name: configure-webhook
+  <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
     trigger: true
@@ -68,26 +79,24 @@ jobs:
       operation: create
       events: [push, pull_request]
 
+- name: configure-controller
+  <<: *gh-status-handlers
+  plan:
+  - get: concourse-ci-test
+    trigger: true
+
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
   - set_pipeline: self
     file: concourse-ci-test/.concourse/reconfigure-pipelines.yml
 
 - name: configure-pipelines
-  on_success:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: success}
-  on_failure:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: failure}
-  on_error:
-    put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: error}
-
+  <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
-    passed: [configure-self]
+    passed: [configure-controller,configure-webhook]
     trigger: true
 
   - put: gh-status
