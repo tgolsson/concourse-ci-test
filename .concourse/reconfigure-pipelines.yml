@@ -43,5 +43,7 @@ jobs:
   plan:
   - get: concourse-ci-test
     passed: [configure-self]
+    trigger: true
+
   - set_pipeline: some-pipeline
     file: concourse-ci-test/.concourse/hello-world.yml
