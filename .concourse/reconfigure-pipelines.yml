@@ -5,6 +5,13 @@ resource_types:
     repository: homedepottech/github-webhook-resource
     tag: latest
 
+- name: cogito
+  type: registry-image
+  check_every: 1h
+  source:
+    repository: pix4d/cogito
+
+
 resources:
 - name: concourse-ci-test
   type: git
@@ -14,15 +21,43 @@ resources:
 
   webhook_token: concourse-ci-test
 
+- name: gh-status
+  type: cogito
+  check_every: 1h
+  source:
+    owner: tgolsson
+    repo: concourse-ci-test
+    access_token: ((status-token))
+
 - name: github-webhook
   type: github-webhook-resource
   source:
     github_api: https://api.github.com
-    github_token: ((github-token))
+    github_token: ((webhook-token))
 
 jobs:
 - name: configure-self
+  on_success:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: success}
+  on_failure:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: failure}
+  on_error:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: error}
+
   plan:
+  - get: concourse-ci-test
+    trigger: true
+
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
   - put: create-webhook
     resource: github-webhook
     params:
@@ -33,17 +68,31 @@ jobs:
       operation: create
       events: [push, pull_request]
 
-  - get: concourse-ci-test
-    trigger: true
-
   - set_pipeline: self
     file: concourse-ci-test/.concourse/reconfigure-pipelines.yml
 
 - name: configure-pipelines
+  on_success:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: success}
+  on_failure:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: failure}
+  on_error:
+    put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: error}
+
   plan:
   - get: concourse-ci-test
     passed: [configure-self]
     trigger: true
+
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
 
   - set_pipeline: some-pipeline
     file: concourse-ci-test/.concourse/hello-world.yml

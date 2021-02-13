@@ -12,7 +12,7 @@ jobs:
   public: true
   plan:
   - get: concourse-ci-test
-  - task: simple-task
+  - task: build
     config:
       platform: linux
       image_resource:
@@ -23,3 +23,12 @@ jobs:
         path: cargo
         args: ["build"]
         dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
+
+      outputs:
+      - name: concourse-ci-test
+
+  - task: execute
+    file: .concourse/task-execute.yml

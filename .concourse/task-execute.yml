@@ -1,0 +1,12 @@
+image_resource:
+  type: registry-image
+  source: { repository: docker.io/library/ubuntu }
+
+platform: linux
+run:
+  path: sh
+  args: ["-c", "ls concourse-ci-test/target/debug/concourse-ci-test && concourse-ci-test/target/debug/concourse-ci-test"]
+                                                                       
+
+inputs:
+  - name: concourse-ci-test
