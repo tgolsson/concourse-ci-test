@@ -31,6 +31,12 @@ resources:
     uri: https://github.com/tgolsson/concourse-ci-test
 
   webhook_token: concourse-ci-test-trigger
+  paths:
+  - Cargo.lock
+  - Cargo.toml
+  - .concourse/primary-rust.yml
+  - src/**
+
 
 # This is the status object that will be updated in each job
 - name: gh-status
