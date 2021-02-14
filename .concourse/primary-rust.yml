@@ -15,13 +15,6 @@ meta:
 
 
 resource_types:
-# This manages the top-level webhook trigger
-- name: github-webhook-resource
-  type: registry-image
-  source:
-    repository: homedepottech/github-webhook-resource
-    tag: latest
-
 # This manages the GitHub status lines
 - name: cogito
   type: registry-image
@@ -31,15 +24,13 @@ resource_types:
 
 
 resources:
-# This is our Git Repository
 - name: concourse-ci-test
   type: git
   icon: github
   source:
     uri: https://github.com/tgolsson/concourse-ci-test
 
-  # NOT a secret, used to map webhooks -> checks
-  webhook_token: concourse-ci-test
+  webhook_token: concourse-ci-test-trigger
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -50,58 +41,95 @@ resources:
     repo: concourse-ci-test
     access_token: ((status-token))
 
-# This is the webhook resource that we'll set each time
-- name: github-webhook
-  type: github-webhook-resource
-  source:
-    github_api: https://api.github.com
-    github_token: ((webhook-token))
+groups:
+- name: validations
+  jobs:
+  - rustfmt
+  - clippy
 
-# These are the jobs that run in parallel
+- name: checking
+  jobs:
+  - test
+  - build
+
 jobs:
-- name: configure-webhook
+- name: test
+  public: true
+
   <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
-    trigger: true
-
   - put: gh-status
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - put: create-webhook
-    resource: github-webhook
-    params:
-      org: tgolsson
-      repo: concourse-ci-test
-      resource_name: concourse-ci-test
-      webhook_token: concourse-ci-test
-      operation: create
-      events: [push, pull_request]
+  - task: build
+    test
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/rust }
 
-- name: configure-controller
+      run:
+        path: cargo
+        args: ["test"]
+        dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
+
+- name: clippy
+  public: true
   <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
-    trigger: true
-
   - put: gh-status
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - set_pipeline: self
-    file: concourse-ci-test/.concourse/reconfigure-pipelines.yml
+  - task: clippy
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/rust }
 
-- name: configure-pipelines
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          rustup component add clippy
+          cargo clippy
+        dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
+
+- name: rustfmt
+  public: true
   <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
-    passed: [configure-controller,configure-webhook]
-    trigger: true
-
   - put: gh-status
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - set_pipeline: primary-rust
-    file: concourse-ci-test/.concourse/primary-rust.yml
+  - task: fmt
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/rust }
+
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          rustup component add rustfmt
+          cargo fmt -- --check
+        dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
