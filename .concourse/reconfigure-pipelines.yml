@@ -105,3 +105,6 @@ jobs:
 
   - set_pipeline: primary-rust
     file: concourse-ci-test/.concourse/primary-rust.yml
+
+  - set_pipeline: primary-docker
+    file: concourse-ci-test/.concourse/primary-docker.yml
