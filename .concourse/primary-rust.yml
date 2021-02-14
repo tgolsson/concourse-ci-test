@@ -63,20 +63,19 @@ jobs:
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - task: build
-    test
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+  - task: test
+    platform: linux
+    image_resource:
+      type: registry-image
+      source: { repository: docker.io/library/rust }
 
-      run:
-        path: cargo
-        args: ["test"]
-        dir: concourse-ci-test
+    run:
+      path: cargo
+      args: ["test"]
+      dir: concourse-ci-test
 
-      inputs:
-      - name: concourse-ci-test
+    inputs:
+    - name: concourse-ci-test
 
 - name: clippy
   public: true
