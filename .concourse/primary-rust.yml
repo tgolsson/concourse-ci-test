@@ -29,13 +29,13 @@ resources:
   icon: github
   source:
     uri: https://github.com/tgolsson/concourse-ci-test
+    paths:
+      - Cargo.lock
+      - Cargo.toml
+      - .concourse/primary-rust.yml
+      - src/**
 
   webhook_token: concourse-ci-test-trigger
-  paths:
-  - Cargo.lock
-  - Cargo.toml
-  - .concourse/primary-rust.yml
-  - src/**
 
 
 # This is the status object that will be updated in each job
