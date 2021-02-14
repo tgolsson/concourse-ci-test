@@ -41,17 +41,6 @@ resources:
     repo: concourse-ci-test
     access_token: ((status-token))
 
-groups:
-- name: validations
-  jobs:
-  - rustfmt
-  - clippy
-
-- name: checking
-  jobs:
-  - test
-  - build
-
 jobs:
 - name: test
   public: true
