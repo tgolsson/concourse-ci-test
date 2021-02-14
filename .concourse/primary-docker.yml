@@ -64,8 +64,6 @@ jobs:
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - get: concourse-examples
-
   - task: build-task-image
     privileged: true
     config:
