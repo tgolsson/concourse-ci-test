@@ -77,6 +77,30 @@ jobs:
     inputs:
     - name: concourse-ci-test
 
+- name: build
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+  - get: concourse-ci-test
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
+  - task: build
+    platform: linux
+    image_resource:
+      type: registry-image
+      source: { repository: docker.io/library/rust }
+
+    run:
+      path: cargo
+      args: ["build"]
+      dir: concourse-ci-test
+
+    inputs:
+    - name: concourse-ci-test
+
 - name: clippy
   public: true
   <<: *gh-status-handlers
