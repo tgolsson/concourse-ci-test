@@ -76,7 +76,7 @@ jobs:
         source:
           repository: vito/oci-build-task
       inputs:
-      - name: concourse-ci-test/phatik-frontend
+      - name: concourse-ci-test
       outputs:
       - name: image
       params:
