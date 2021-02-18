@@ -18,10 +18,10 @@ resource_types:
 # This manages the GitHub status lines
 - name: cogito
   type: registry-image
-  check_every: 1h
+  check_every: 1m
   source:
-    repository: pix4d/cogito
-
+    repository: ((harbor.image-repo-name))/cogito
+    tag: latest
 
 resources:
 - name: concourse-ci-test
@@ -30,13 +30,20 @@ resources:
   source:
     uri: https://github.com/tgolsson/concourse-ci-test
     paths:
-      - Cargo.lock
-      - Cargo.toml
-      - .concourse/primary-rust.yml
-      - src/**
+      - phatik-backend/**
+      - Dockerfiles/phatik-backend/**
+      - .concourse/phatik-backend.yml
 
   webhook_token: concourse-ci-test-trigger
 
+# Where we will push the image
+- name: phatik-backend
+  type: registry-image
+  icon: docker
+  source:
+    repository: ((phatik.image-repo-name))/backend
+    username: ((phatik.registry-username))
+    password: ((phatik.registry-password))
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -46,8 +53,38 @@ resources:
     owner: tgolsson
     repo: concourse-ci-test
     access_token: ((status-token))
+    context_namespace: phatik-backend
 
 jobs:
+- name: build
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+  - get: concourse-ci-test
+    trigger: true
+    passed: [clippy,rustfmt,test]
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
+  - task: build
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/rust }
+
+      run:
+        path: cargo
+        args: ["build"]
+        dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
+      outputs:
+      - name: concourse-ci-test
+
 - name: test
   public: true
 
@@ -75,39 +112,13 @@ jobs:
       inputs:
       - name: concourse-ci-test
 
-- name: build
-  public: true
-
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
-
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
-
-  - task: build
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
-
-      run:
-        path: cargo
-        args: ["build"]
-        dir: concourse-ci-test
-
-      inputs:
-      - name: concourse-ci-test
-
 - name: clippy
   public: true
   <<: *gh-status-handlers
   plan:
   - get: concourse-ci-test
     trigger: true
+
 
   - put: gh-status
     inputs: [concourse-ci-test]
@@ -161,3 +172,55 @@ jobs:
 
       inputs:
       - name: concourse-ci-test
+
+- name: build
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+  - get: concourse-ci-test
+    trigger: true
+    passed: [clippy,rustfmt,test,build]
+
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
+  - task: build
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/rust }
+
+      run:
+        path: cargo
+        args: ["build", "--release"]
+        dir: concourse-ci-test
+
+      inputs:
+      - name: concourse-ci-test
+      outputs:
+      - name: concourse-ci-test
+
+  - task: docker-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: concourse-ci-test
+      outputs:
+      - name: image
+      params:
+        CONTEXT: concourse-ci-test
+        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
+      run:
+        path: build
+
+  - put: phatik-backend
+    params:
+      image: image/image.tar

@@ -22,13 +22,16 @@ resource_types:
     repository: homedepottech/github-webhook-resource
     tag: latest
 
+
 # This manages the GitHub status lines
 - name: cogito
   type: registry-image
-  check_every: 1h
+  check_every: 1m
   source:
-    repository: pix4d/cogito
-
+    repository: ((harbor.image-repo-name))/cogito
+    username: ((harbor.registry-username))
+    password: ((harbor.registry-password))
+    tag: latest
 
 resources:
 # This is our Git Repository
@@ -37,7 +40,6 @@ resources:
   icon: github
   source:
     uri: https://github.com/tgolsson/concourse-ci-test
-
   # NOT a secret, used to map webhooks -> checks
   webhook_token: concourse-ci-test
 
@@ -49,6 +51,7 @@ resources:
     owner: tgolsson
     repo: concourse-ci-test
     access_token: ((status-token))
+    context_namespace: controller
 
 # This is the webhook resource that we'll set each time
 - name: github-webhook
@@ -103,8 +106,8 @@ jobs:
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - set_pipeline: primary-rust
-    file: concourse-ci-test/.concourse/primary-rust.yml
+  - set_pipeline: phatik-frontend
+    file: concourse-ci-test/.concourse/phatik-frontend.yml
 
-  - set_pipeline: primary-docker
-    file: concourse-ci-test/.concourse/primary-docker.yml
+  - set_pipeline: phatik-backend
+    file: concourse-ci-test/.concourse/phatik-backend.yml

@@ -35,13 +35,14 @@ resources:
     branch: main
 
 # Where we will push the image
-- name: simple-image
+- name: phatik-frontend
   type: registry-image
   icon: docker
   source:
-    repository: ((harbor.image-repo-name))/simple-image
-    username: ((harbor.registry-username))
-    password: ((harbor.registry-password))
+    repository: ((phatik.image-repo-name))/frontend
+    username: ((phatik.registry-username))
+    password: ((phatik.registry-password))
+
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -51,7 +52,7 @@ resources:
     owner: tgolsson
     repo: concourse-ci-test
     access_token: ((status-token))
-    context_namespace: test
+    context_namespace: phatik-frontend
 
 jobs:
 - name: build-and-push-docker-image
@@ -75,14 +76,15 @@ jobs:
         source:
           repository: vito/oci-build-task
       inputs:
-      - name: concourse-ci-test
+      - name: concourse-ci-test/phatik-frontend
       outputs:
       - name: image
       params:
-        CONTEXT: concourse-ci-test/Dockerfiles/test
+        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-frontend/Dockerfile
+        CONTEXT: concourse-ci-test
       run:
         path: build
 
-  - put: simple-image
+  - put: phatik-frontend
     params:
       image: image/image.tar
