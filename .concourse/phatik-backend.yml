@@ -78,7 +78,7 @@ jobs:
       run:
         path: cargo
         args: ["build"]
-        dir: concourse-ci-test
+        dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
@@ -107,7 +107,7 @@ jobs:
       run:
         path: cargo
         args: ["test"]
-        dir: concourse-ci-test
+        dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
@@ -138,7 +138,7 @@ jobs:
         - |
           rustup component add clippy
           cargo clippy
-        dir: concourse-ci-test
+        dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
@@ -168,7 +168,7 @@ jobs:
         - |
           rustup component add rustfmt
           cargo fmt -- --check
-        dir: concourse-ci-test
+        dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
@@ -196,7 +196,7 @@ jobs:
       run:
         path: cargo
         args: ["build", "--release"]
-        dir: concourse-ci-test
+        dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
