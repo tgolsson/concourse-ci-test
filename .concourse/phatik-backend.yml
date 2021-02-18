@@ -173,7 +173,7 @@ jobs:
       inputs:
       - name: concourse-ci-test
 
-- name: build
+- name: publish
   public: true
 
   <<: *gh-status-handlers
@@ -186,7 +186,7 @@ jobs:
     inputs: [concourse-ci-test]
     params: {state: pending}
 
-  - task: build
+  - task: build-release
     config:
       platform: linux
       image_resource:
