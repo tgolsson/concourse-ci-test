@@ -14,7 +14,6 @@ tide-websockets = { version = "0.2.0" }
 tide = { version = "0.16.0", default-features = false, features = ["h1-server"] }
 async-std = { version = "1.7.0", features = ["attributes"] }
 
-rusqlite = "0.24"
 log = "0.4"
 simplelog = "0.9.0"
 anyhow = "1.0.37"

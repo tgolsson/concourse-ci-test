@@ -1014,7 +1014,6 @@ dependencies = [
  "database",
  "log",
  "models",
- "rusqlite",
  "simplelog",
  "tide",
  "tide-websockets",
