@@ -1,13 +1,11 @@
 use anyhow::{Context, Result};
+use async_std::sync::Mutex;
+use database::DatabaseApi;
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use warp::{ws::WebSocket, Filter};
 
 mod api;
-mod database;
 
-use api::handle_websocket;
-use database::DatabaseApi;
+type Db = Arc<Mutex<DatabaseApi>>;
 
 async fn inner_main() -> Result<()> {
     let conn = DatabaseApi::new_temporary().and_then(|db| {
@@ -17,25 +15,24 @@ async fn inner_main() -> Result<()> {
     })?;
 
     let store = Arc::new(Mutex::new(conn));
-    let store2 = store.clone();
-    let db_make = warp::any().map(move || store.clone());
 
-    let ws = warp::path!("api" / "websocket")
-        .and(warp::ws())
-        .and(db_make)
-        .map(|ws: warp::ws::Ws, store| {
-            ws.on_upgrade(move |sock: WebSocket| handle_websocket(sock, store))
-        });
+    let mut app = tide::with_state(store);
 
-    let rest = api::filters::status(store2);
-
-    warp::serve(rest.or(ws)).run(([127, 0, 0, 1], 3030)).await;
+    api::mount(&mut app);
+    app.listen("127.0.0.1:3030").await?;
 
     Ok(())
 }
 
-#[tokio::main]
+#[async_std::main]
 async fn main() {
-    mowl::init().unwrap();
+    use simplelog::*;
+    CombinedLogger::init(vec![TermLogger::new(
+        LevelFilter::Warn,
+        Config::default(),
+        TerminalMode::Mixed,
+    )])
+    .unwrap();
+
     inner_main().await.expect("succcess");
 }

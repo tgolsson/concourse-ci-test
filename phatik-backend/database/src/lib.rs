@@ -4,9 +4,9 @@
 
 use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
-use crate::api::Event;
+use models::Event;
 
 pub struct DbEvent {
     pub message: String,
@@ -176,7 +176,7 @@ impl DatabaseApi {
             max_id.replace_with(|v| (*v).max(here_id));
 
             let tags_string: String = row.get(4)?;
-            let tags = tags_string.split(";").map(|v| v.to_owned()).collect();
+            let tags = tags_string.split(':').map(|v| v.to_owned()).collect();
             Ok(Event {
                 message: row.get(1)?,
                 app: row.get(2)?,

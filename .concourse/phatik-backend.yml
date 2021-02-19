@@ -216,10 +216,11 @@ jobs:
       outputs:
       - name: image
       params:
-        CONTEXT: concourse-ci-test
-        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
+        CONTEXT: .
+        DOCKERFILE: Dockerfiles/phatik-backend/Dockerfile
       run:
         path: build
+        dir: concourse-ci-test
 
   - put: phatik-backend
     params:
