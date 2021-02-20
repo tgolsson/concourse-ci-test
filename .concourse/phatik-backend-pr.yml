@@ -1,0 +1,228 @@
+meta:
+  gh-status_handlers: &gh-status-handlers
+    on_success:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: success }
+    on_failure:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: failure }
+    on_error:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: error }
+
+resource_types:
+  # This manages the GitHub status lines
+- name: cogito
+  type: registry-image
+  check_every: 1m
+  source:
+    repository: ((harbor.image-repo-name))/cogito
+    tag: latest
+
+- name: pull-request
+  type: registry-image
+  source:
+    repository: teliaoss/github-pr-resource
+
+resources:
+- name: pull-request
+  type: pull-request
+  check_every: 24h
+  webhook_token: ((webhook-token))
+  source:
+    repository: tgolsson/concourse-ci-test
+    access_token: ((pr-token))
+    paths:
+    - phatik-backend/**
+    - Dockerfiles/phatik-backend/**
+    - .concourse/phatik-backend.yml
+
+# This is the status object that will be updated in each job
+- name: gh-status
+  type: cogito
+  check_every: 1h
+  source:
+    owner: tgolsson
+    repo: concourse-ci-test
+    access_token: ((status-token))
+    context_namespace: phatik-backend
+
+jobs:
+- name: begin-pr
+  plan:
+  - get: pull-request
+    trigger: true
+    version: every
+    params: { list_changed_files: true }
+
+  - task: generate-comment
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: docker.io/library/alpine }
+
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          apk add jq
+          cat pull-request/.git/resource/metadata.json
+          cat pull-request/.git/resource/version.json
+          cat pull-request/.git/resource/changed_files
+          BASE_COMMIT=$(jq -r '.[] | select(.name == "base_sha").value' pull-request/.git/resource/metadata.json)
+          COMMIT=$(jq -r '.[] | select(.name == "head_sha").value'  pull-request/.git/resource/metadata.json)
+          cat << EOF > messages/status.txt
+          Attempting merge of commit $COMMIT with base $BASE_COMMIT.
+
+          Changed files:
+          \`\`\`
+          $(cat pull-request/.git/resource/changed_files)
+          \`\`\`
+          EOF
+
+          cat messages/status.txt
+      inputs:
+      - name: pull-request
+      outputs:
+      - name: messages
+
+  - put: pull-request
+    params:
+      path: pull-request
+      status: pending
+      context: begin-pr
+      comment_file: messages/status.txt
+
+- name: build
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+    - get: pull-request
+      trigger: true
+      passed: [clippy, rustfmt, test]
+    - put: gh-status
+      inputs: [pull-request]
+      params: { state: pending }
+
+    - task: build
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: docker.io/library/rust }
+
+        run:
+          path: cargo
+          args: ["build"]
+          dir: pull-request/phatik-backend
+
+        inputs:
+          - name: pull-request
+
+- name: test
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+    - get: pull-request
+      trigger: true
+      passed: [begin-pr]
+
+    - put: gh-status
+      inputs: [pull-request]
+      params: { state: pending }
+
+    - task: test
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: docker.io/library/rust }
+
+        run:
+          path: cargo
+          args: ["test"]
+          dir: pull-request/phatik-backend
+
+        inputs:
+          - name: pull-request
+
+- name: clippy
+  public: true
+  <<: *gh-status-handlers
+  plan:
+    - get: pull-request
+      trigger: true
+      passed: [begin-pr]
+
+    - put: gh-status
+      inputs: [pull-request]
+      params: { state: pending }
+
+    - task: clippy
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: docker.io/library/rust }
+
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              rustup component add clippy
+              cargo clippy
+          dir: pull-request/phatik-backend
+
+        inputs:
+          - name: pull-request
+
+- name: rustfmt
+  public: true
+  <<: *gh-status-handlers
+  plan:
+    - get: pull-request
+      trigger: true
+      passed: [begin-pr]
+
+    - put: gh-status
+      inputs: [pull-request]
+      params: { state: pending }
+
+    - task: fmt
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: docker.io/library/rust }
+
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              rustup component add rustfmt
+              cargo fmt -- --check
+          dir: pull-request/phatik-backend
+
+        inputs:
+          - name: pull-request
+
+- name: end-pr
+  plan:
+  - get: pull-request
+    passed: [build]
+    trigger: true
+
+  - put: pull-request
+    params:
+      path: pull-request
+      context: begin-pr
+      status: success

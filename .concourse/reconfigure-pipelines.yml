@@ -111,3 +111,6 @@ jobs:
 
   - set_pipeline: phatik-backend
     file: concourse-ci-test/.concourse/phatik-backend.yml
+
+  - set_pipeline: phatik-backend-pr
+    file: concourse-ci-test/.concourse/phatik-backend-pr.yml
