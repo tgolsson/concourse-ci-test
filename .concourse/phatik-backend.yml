@@ -198,7 +198,7 @@ jobs:
         args:
         - -c
         - |
-          cargo build
+          cargo build --release
           cp ./target/release/phatik-backend ../../phatik-backend-binary/phatik-backend
         dir: concourse-ci-test/phatik-backend
 
