@@ -194,14 +194,18 @@ jobs:
         source: { repository: docker.io/library/rust }
 
       run:
-        path: cargo
-        args: ["build", "--release"]
+        path: bash
+        args:
+        - -c
+        - |
+          cargo build
+          cp ./target/release/phatik-backend ../../phatik-backend-binary/phatik-backend
         dir: concourse-ci-test/phatik-backend
 
       inputs:
       - name: concourse-ci-test
       outputs:
-      - name: concourse-ci-test
+      - name: phatik-backend-binary
 
   - task: docker-image
     privileged: true
@@ -212,11 +216,11 @@ jobs:
         source:
           repository: vito/oci-build-task
       inputs:
-      - name: concourse-ci-test
+      - name: phatik-backend-binary
       outputs:
       - name: image
       params:
-        CONTEXT: concourse-ci-test
+        CONTEXT: .
         DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
       run:
         path: build
