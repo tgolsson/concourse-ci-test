@@ -88,3 +88,4 @@ jobs:
   - put: phatik-frontend
     params:
       image: image/image.tar
+      tag: latest
