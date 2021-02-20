@@ -3,230 +3,229 @@ meta:
     on_success:
       put: gh-status
       inputs: [concourse-ci-test]
-      params: {state: success}
+      params: { state: success }
     on_failure:
       put: gh-status
       inputs: [concourse-ci-test]
-      params: {state: failure}
+      params: { state: failure }
     on_error:
       put: gh-status
       inputs: [concourse-ci-test]
-      params: {state: error}
-
+      params: { state: error }
 
 resource_types:
-# This manages the GitHub status lines
-- name: cogito
-  type: registry-image
-  check_every: 1m
-  source:
-    repository: ((harbor.image-repo-name))/cogito
-    tag: latest
+  # This manages the GitHub status lines
+  - name: cogito
+    type: registry-image
+    check_every: 1m
+    source:
+      repository: ((harbor.image-repo-name))/cogito
+      tag: latest
 
 resources:
-- name: concourse-ci-test
-  type: git
-  icon: github
-  source:
-    uri: https://github.com/tgolsson/concourse-ci-test
-    paths:
-      - phatik-backend/**
-      - Dockerfiles/phatik-backend/**
-      - .concourse/phatik-backend.yml
+  - name: concourse-ci-test
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/tgolsson/concourse-ci-test
+      paths:
+        - phatik-backend/**
+        - Dockerfiles/phatik-backend/**
+        - .concourse/phatik-backend.yml
 
-  webhook_token: concourse-ci-test-trigger
+    webhook_token: concourse-ci-test-trigger
 
-# Where we will push the image
-- name: phatik-backend
-  type: registry-image
-  icon: docker
-  source:
-    repository: ((phatik.image-repo-name))/backend
-    username: ((phatik.registry-username))
-    password: ((phatik.registry-password))
+  # Where we will push the image
+  - name: phatik-backend
+    type: registry-image
+    icon: docker
+    source:
+      repository: ((phatik.image-repo-name))/backend
+      username: ((phatik.registry-username))
+      password: ((phatik.registry-password))
 
-# This is the status object that will be updated in each job
-- name: gh-status
-  type: cogito
-  check_every: 1h
-  source:
-    owner: tgolsson
-    repo: concourse-ci-test
-    access_token: ((status-token))
-    context_namespace: phatik-backend
+  # This is the status object that will be updated in each job
+  - name: gh-status
+    type: cogito
+    check_every: 1h
+    source:
+      owner: tgolsson
+      repo: concourse-ci-test
+      access_token: ((status-token))
+      context_namespace: phatik-backend
 
 jobs:
-- name: build
-  public: true
+  - name: build
+    public: true
 
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
-    passed: [clippy,rustfmt,test]
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
+        passed: [clippy, rustfmt, test]
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
 
-  - task: build
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+      - task: build
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/rust }
 
-      run:
-        path: cargo
-        args: ["build"]
-        dir: concourse-ci-test/phatik-backend
+          run:
+            path: cargo
+            args: ["build"]
+            dir: concourse-ci-test/phatik-backend
 
-      inputs:
-      - name: concourse-ci-test
-      outputs:
-      - name: concourse-ci-test
+          inputs:
+            - name: concourse-ci-test
+          outputs:
+            - name: concourse-ci-test
 
-- name: test
-  public: true
+  - name: test
+    public: true
 
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
 
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
 
-  - task: test
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/rust }
 
-      run:
-        path: cargo
-        args: ["test"]
-        dir: concourse-ci-test/phatik-backend
+          run:
+            path: cargo
+            args: ["test"]
+            dir: concourse-ci-test/phatik-backend
 
-      inputs:
-      - name: concourse-ci-test
+          inputs:
+            - name: concourse-ci-test
 
-- name: clippy
-  public: true
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
+  - name: clippy
+    public: true
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
 
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
 
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
+      - task: clippy
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/rust }
 
-  - task: clippy
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                rustup component add clippy
+                cargo clippy
+            dir: concourse-ci-test/phatik-backend
 
-      run:
-        path: bash
-        args:
-        - -c
-        - |
-          rustup component add clippy
-          cargo clippy
-        dir: concourse-ci-test/phatik-backend
+          inputs:
+            - name: concourse-ci-test
 
-      inputs:
-      - name: concourse-ci-test
+  - name: rustfmt
+    public: true
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
 
-- name: rustfmt
-  public: true
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
 
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
+      - task: fmt
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/rust }
 
-  - task: fmt
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                rustup component add rustfmt
+                cargo fmt -- --check
+            dir: concourse-ci-test/phatik-backend
 
-      run:
-        path: bash
-        args:
-        - -c
-        - |
-          rustup component add rustfmt
-          cargo fmt -- --check
-        dir: concourse-ci-test/phatik-backend
+          inputs:
+            - name: concourse-ci-test
 
-      inputs:
-      - name: concourse-ci-test
+  - name: publish
+    public: true
 
-- name: publish
-  public: true
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
+        passed: [clippy, rustfmt, test, build]
 
-  <<: *gh-status-handlers
-  plan:
-  - get: concourse-ci-test
-    trigger: true
-    passed: [clippy,rustfmt,test,build]
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
 
-  - put: gh-status
-    inputs: [concourse-ci-test]
-    params: {state: pending}
+      - task: build-release
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/rust }
 
-  - task: build-release
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/rust }
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                cargo build --release
+                cp ./target/release/phatik-backend ../../phatik-backend-binary/phatik-backend
+            dir: concourse-ci-test/phatik-backend
 
-      run:
-        path: bash
-        args:
-        - -c
-        - |
-          cargo build --release
-          cp ./target/release/phatik-backend ../../phatik-backend-binary/phatik-backend
-        dir: concourse-ci-test/phatik-backend
+          inputs:
+            - name: concourse-ci-test
+          outputs:
+            - name: phatik-backend-binary
 
-      inputs:
-      - name: concourse-ci-test
-      outputs:
-      - name: phatik-backend-binary
+      - task: docker-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: vito/oci-build-task
 
-  - task: docker-image
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: vito/oci-build-task
-      inputs:
-      - name: phatik-backend-binary
-      - name: concourse-ci-test
+          inputs:
+            - name: phatik-backend-binary
+            - name: concourse-ci-test
 
-      outputs:
-      - name: image
-      params:
-        CONTEXT: .
-        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
-      run:
-        path: build
+          outputs:
+            - name: image
+          params:
+            CONTEXT: .
+            DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
+          run:
+            path: build
 
-  - put: phatik-backend
-    params:
-      image: image/image.tar
+      - put: phatik-backend
+        params:
+          image: image/image.tar
