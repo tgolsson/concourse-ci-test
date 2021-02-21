@@ -50,6 +50,7 @@ jobs:
     plan:
       - get: concourse-ci-test
         trigger: true
+
       - put: gh-status
         inputs: [concourse-ci-test]
         params: { state: pending }

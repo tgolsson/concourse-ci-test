@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: success }
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: failure }
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: error }
 
 resource_types:
@@ -95,7 +95,7 @@ jobs:
       path: pull-request
       status: pending
       context: pull-request
-      base-context: phatik-client-py
+      base_context: phatik-client-py
       comment_file: messages/status.txt
 
 - name: test
@@ -106,6 +106,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -141,6 +142,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -176,6 +178,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -215,5 +218,5 @@ jobs:
     params:
       path: pull-request
       context: pull-request
-      base-context: phatik-client-py
+      base_context: phatik-client-py
       status: success
