@@ -1,0 +1,143 @@
+meta:
+  gh-status_handlers: &gh-status-handlers
+    on_success:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: { state: success }
+    on_failure:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: { state: failure }
+    on_error:
+      put: gh-status
+      inputs: [concourse-ci-test]
+      params: { state: error }
+
+resource_types:
+  # This manages the GitHub status lines
+  - name: cogito
+    type: registry-image
+    check_every: 1m
+    source:
+      repository: ((harbor.image-repo-name))/cogito
+      tag: latest
+
+resources:
+  - name: concourse-ci-test
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/tgolsson/concourse-ci-test
+      paths:
+        - phatik-client-py/**
+        - .concourse/phatik-client-py.yml
+
+  # This is the status object that will be updated in each job
+  - name: gh-status
+    type: cogito
+    check_every: 1h
+    source:
+      owner: tgolsson
+      repo: concourse-ci-test
+      access_token: ((status-token))
+      context_namespace: phatik-client-py
+
+jobs:
+  - name: test
+    public: true
+
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
+
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/python:3.7-alpine }
+
+          run:
+            path: sh
+            args:
+            - "-c"
+            - |
+              pip3.7 install pytest
+              pip3.7 install -e .
+              pytest phatik
+            dir: concourse-ci-test/phatik-client-py
+
+          inputs:
+            - name: concourse-ci-test
+          outputs:
+            - name: concourse-ci-test
+
+  - name: flake8
+    public: true
+
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
+
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/python:3.7-alpine }
+
+          run:
+            path: sh
+            args:
+            - "-c"
+            - |
+              pip3.7 install flake8
+              pip3.7 install -e .
+              flake8 phatik
+            dir: concourse-ci-test/phatik-client-py
+
+          inputs:
+            - name: concourse-ci-test
+          outputs:
+            - name: concourse-ci-test
+
+  - name: pylint
+    public: true
+
+    <<: *gh-status-handlers
+    plan:
+      - get: concourse-ci-test
+        trigger: true
+      - put: gh-status
+        inputs: [concourse-ci-test]
+        params: { state: pending }
+
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: docker.io/library/python:3.7-alpine }
+
+          run:
+            path: sh
+            args:
+            - "-c"
+            - |
+              pip3.7 install pylint
+              pip3.7 install -e .
+              pylint phatik
+            dir: concourse-ci-test/phatik-client-py
+
+          inputs:
+            - name: concourse-ci-test
+          outputs:
+            - name: concourse-ci-test

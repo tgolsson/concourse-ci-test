@@ -43,6 +43,7 @@ resources:
       repository: ((phatik.image-repo-name))/backend
       username: ((phatik.registry-username))
       password: ((phatik.registry-password))
+      tag: latest
 
   # This is the status object that will be updated in each job
   - name: gh-status

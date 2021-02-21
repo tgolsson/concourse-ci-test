@@ -56,11 +56,11 @@ pub async fn handle_phatic_message(
 }
 
 pub fn mount(app: &mut tide::Server<Db>) {
-    app.at("/api/websocket").with(WebSocket::new(
+    app.at("/api/websocket").get(WebSocket::new(
         |request: Request<Db>, mut stream| async move {
             let store = request.state().clone();
             while let Some(Ok(Message::Text(incoming))) = stream.next().await {
-                let p: PhaticMessage = deserialize(&incoming)?;
+                let p: PhaticMessage = deserialize(&incoming).unwrap();
 
                 if let Some(res) = handle_phatic_message(p, &store).await? {
                     // let msg = Message::text(&serialize(&res)?);
@@ -87,8 +87,7 @@ pub fn mount(app: &mut tide::Server<Db>) {
             Ok(serialize(&status)?)
         })
         .post(|mut req: Request<Db>| async move {
-            let mut event: Event = req.body_json().await?;
-            log::debug!("create_status: {:?}", event);
+            let mut event: Event = req.body_json().await.unwrap();
 
             let conn = req.state().lock().await;
             let tags = event

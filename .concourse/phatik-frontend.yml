@@ -42,7 +42,7 @@ resources:
     repository: ((phatik.image-repo-name))/frontend
     username: ((phatik.registry-username))
     password: ((phatik.registry-password))
-
+    tag: latest
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -88,4 +88,4 @@ jobs:
   - put: phatik-frontend
     params:
       image: image/image.tar
-      tag: latest
+

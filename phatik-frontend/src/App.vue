@@ -63,9 +63,10 @@ export default {
     },
     computed: {
         loading() {
-            console.log(this.$store.state.in_wait);
             return this.$store.state.in_wait;
         },
     },
+
+    mounted() {},
 };
 </script>

@@ -1,2 +1,4 @@
 phatik-backend/target
 phatik-frontend/node_modules
+*.pyc
+*.egg-info

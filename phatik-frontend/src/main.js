@@ -16,15 +16,15 @@ import Vuex from 'vuex'
 
 Vue.use(VueMaterial);
 Vue.use(VueRouter);
+Vue.use(Vuex)
 
 Vue.use(TimeAgo, {
     name: 'timeago', // Component name, `Timeago` by default
     locale: 'en', // Default locale
 })
 
-const Bar = { template: "<div>bar</div>" };
-
 const routes = [
+    { path: '/', redirect: '/app' },
     { path: "/app", component: Events },
     { path: "/settings", component: Settings },
 ];
@@ -33,7 +33,6 @@ const router = new VueRouter({
     routes, // short for `routes: routes`
 });
 
-Vue.use(Vuex)
 
 const store = new Vuex.Store({
     state: {

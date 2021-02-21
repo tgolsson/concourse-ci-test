@@ -19,7 +19,7 @@ async fn inner_main() -> Result<()> {
     let mut app = tide::with_state(store);
 
     api::mount(&mut app);
-    app.listen("127.0.0.1:3030").await?;
+    app.listen("0.0.0.0:3030").await?;
 
     Ok(())
 }

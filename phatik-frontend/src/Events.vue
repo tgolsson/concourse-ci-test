@@ -111,12 +111,7 @@ export default {
             show_help_dialog: false,
             active_tags: [],
 
-            tooltipOptions: {
-                container: false,
-                delay: { show: 0, hide: 0 },
-                autoHide: true,
-                trigger: "hover",
-            },
+            retry_iteration: 0,
         };
     },
 
@@ -133,44 +128,7 @@ export default {
     },
 
     created: function () {
-        console.log("Starting connection to WebSocket Server");
-        let protocol = window.location.protocol == "https:" ? "wss:" : "ws:";
-
-        let url =
-            protocol + "//" + window.location.hostname + ":3030/api/websocket";
-        console.info("Connecting to ", url);
-        this.connection = new WebSocket(url);
-
-        this.connection.onmessage = function (event) {
-            let data = JSON.parse(event.data);
-
-            if ("status_list" in data) {
-                console.debug("received status_list reply");
-                this.last_id = data.status_list.last_id;
-                this.events = [...data.status_list.events, ...this.events];
-                this.events = this.events.sort(
-                    (a, b) => a.epoch_seconds < b.epoch_seconds
-                );
-                this.awaiting_message = false;
-                this.$store.commit("end_long_poll");
-            } else if ("tag_list" in data) {
-                console.debug("received tag_list reply");
-                this.all_tags = data.tag_list.tags;
-                this.awaiting_tags_message = false;
-            }
-        }.bind(this);
-
-        this.connection.onopen = function (event) {
-            console.log(
-                "Successfully connected to the echo websocket server..."
-            );
-
-            this.fetchEventsList();
-            this.timer = setInterval(this.fetchEventsList, 3000);
-
-            this.refreshTagsList();
-            this.tags_timer = setInterval(this.fetchEventsList, 60000);
-        }.bind(this);
+        this.reconnect(0);
     },
 
     methods: {
@@ -208,6 +166,74 @@ export default {
         cancelAutoUpdate() {
             clearInterval(this.timer);
             clearInterval(this.tags_timer);
+        },
+
+        reconnect(current_delay) {
+            console.log("Starting connection to WebSocket Server");
+            let protocol =
+                window.location.protocol == "https:" ? "wss:" : "ws:";
+            let url =
+                protocol +
+                "//" +
+                window.location.hostname +
+                ":3030/api/websocket";
+            console.info("Connecting to ", url);
+            this.connection = new WebSocket(url);
+            this.connection.onmessage = function (event) {
+                let data = JSON.parse(event.data);
+                if ("status_list" in data) {
+                    console.debug("received status_list reply");
+                    this.last_id = data.status_list.last_id;
+                    this.events = [...data.status_list.events, ...this.events];
+                    this.events = this.events.sort(
+                        (a, b) => a.epoch_seconds < b.epoch_seconds
+                    );
+                    this.awaiting_message = false;
+                    this.$store.commit("end_long_poll");
+                } else if ("tag_list" in data) {
+                    console.debug("received tag_list reply");
+                    this.all_tags = data.tag_list.tags;
+                    this.awaiting_tags_message = false;
+                }
+            }.bind(this);
+
+            this.connection.onopen = function (event) {
+                console.log(
+                    "Successfully connected to the echo websocket server..."
+                );
+
+                this.fetchEventsList();
+                this.timer = setInterval(this.fetchEventsList, 3000);
+
+                this.refreshTagsList();
+                this.tags_timer = setInterval(this.fetchEventsList, 60000);
+                this.retry_iteration = 0;
+            }.bind(this);
+
+            this.connection.onclose = function () {
+                let random_number_milliseconds = Math.floor(
+                    Math.random() * 1000
+                );
+                const maximum_backoff = 64 * 1000;
+                let delay = Math.min(
+                    Math.pow(2, this.retry_iteration) * 1000 +
+                        random_number_milliseconds,
+                    maximum_backoff
+                );
+                console.error(
+                    "Failed connection to backend, retrying in " +
+                        Math.floor(delay / 1000) +
+                        " seconds"
+                );
+                this.connection = null;
+                this.cancelAutoUpdate();
+
+                this.connection_timer = setTimeout(
+                    () => this.reconnect(),
+                    delay
+                );
+                this.retry_iteration += 1;
+            }.bind(this);
         },
     },
 };

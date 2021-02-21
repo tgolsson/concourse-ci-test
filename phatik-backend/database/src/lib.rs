@@ -176,7 +176,7 @@ impl DatabaseApi {
             max_id.replace_with(|v| (*v).max(here_id));
 
             let tags_string: String = row.get(4)?;
-            let tags = tags_string.split(':').map(|v| v.to_owned()).collect();
+            let tags = tags_string.split(';').map(|v| v.to_owned()).collect();
             Ok(Event {
                 message: row.get(1)?,
                 app: row.get(2)?,
