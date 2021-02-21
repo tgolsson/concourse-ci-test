@@ -59,7 +59,7 @@ jobs:
           platform: linux
           image_resource:
             type: registry-image
-            source: { repository: docker.io/library/python:3.7-alpine }
+            source: { repository: docker.io/library/python, tag: 3.7-alpine }
 
           run:
             path: sh
@@ -92,7 +92,7 @@ jobs:
           platform: linux
           image_resource:
             type: registry-image
-            source: { repository: docker.io/library/python:3.7-alpine }
+            source: { repository: docker.io/library/python, tag: 3.7-alpine }
 
           run:
             path: sh
@@ -125,13 +125,14 @@ jobs:
           platform: linux
           image_resource:
             type: registry-image
-            source: { repository: docker.io/library/python:3.7-alpine }
+            source: { repository: docker.io/library/python, tag: 3.7-alpine }
 
           run:
             path: sh
             args:
             - "-c"
             - |
+              apk add gcc libc-dev
               pip3.7 install pylint
               pip3.7 install -e .
               pylint phatik
