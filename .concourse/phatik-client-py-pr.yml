@@ -125,7 +125,7 @@ jobs:
         - |
           pip3.7 install pytest
           pip3.7 install -e .
-          pytest phatik
+          pytest tests
           dir: pull-request/phatik-client-py
 
       inputs:
