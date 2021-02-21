@@ -50,6 +50,7 @@ jobs:
     plan:
       - get: concourse-ci-test
         trigger: true
+
       - put: gh-status
         inputs: [concourse-ci-test]
         params: { state: pending }
@@ -68,7 +69,7 @@ jobs:
             - |
               pip3.7 install pytest
               pip3.7 install -e .
-              pytest phatik
+              pytest tests
             dir: concourse-ci-test/phatik-client-py
 
           inputs:

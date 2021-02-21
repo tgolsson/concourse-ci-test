@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: success }
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: failure }
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [pull-request]
       params: { state: error }
 
 resource_types:
@@ -31,7 +31,7 @@ resources:
 - name: pull-request
   type: pull-request
   check_every: 24h
-  webhook_token: ((webhook-token))
+  webhook_token: concourse-ci-test
   source:
     repository: tgolsson/concourse-ci-test
     access_token: ((pr-token))
@@ -95,7 +95,7 @@ jobs:
       path: pull-request
       status: pending
       context: pull-request
-      base-context: phatik-client-py
+      base_context: phatik-client-py
       comment_file: messages/status.txt
 
 - name: test
@@ -106,6 +106,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -124,8 +125,8 @@ jobs:
         - "-c"
         - |
           pip3.7 install pytest
-          pip3.7 install -e .
-          pytest phatik
+          pip3.7 install .
+          pytest tests
           dir: pull-request/phatik-client-py
 
       inputs:
@@ -141,6 +142,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -159,7 +161,7 @@ jobs:
         - "-c"
         - |
           pip3.7 install flake8
-          pip3.7 install -e .
+          pip3.7 install .
           flake8 phatik
         dir: pull-request/phatik-client-py
 
@@ -176,6 +178,7 @@ jobs:
   - get: pull-request
     trigger: true
     version: every
+    passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
@@ -195,7 +198,7 @@ jobs:
         - |
           apk add gcc libc-dev
           pip3.7 install pylint
-          pip3.7 install -e .
+          pip3.7 install .
           pylint phatik
         dir: pull-request/phatik-client-py
 
@@ -215,5 +218,5 @@ jobs:
     params:
       path: pull-request
       context: pull-request
-      base-context: phatik-client-py
+      base_context: phatik-client-py
       status: success
