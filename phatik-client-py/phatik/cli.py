@@ -3,6 +3,8 @@ CLI implementation for Phatik library
 '''
 
 import argparse
+import json
+from dataclasses import asdict
 
 from .phatik import post, get
 
@@ -25,8 +27,6 @@ def list_command(args: argparse.Namespace):
         print(response)
 
     elif args.format == 'json':
-        import json
-        from dataclasses import asdict
         print(json.dumps(asdict(response)))
 
 
@@ -45,7 +45,6 @@ class ArgparseHelper(argparse._HelpAction):
 
     def __call__(self, parser, namespace, values, option_string=None):
         parser.print_help()
-        print()
 
         subparsers_actions = [
             action for action in parser._actions

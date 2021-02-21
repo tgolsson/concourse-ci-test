@@ -125,7 +125,7 @@ jobs:
         - "-c"
         - |
           pip3.7 install pytest
-          pip3.7 install -e .
+          pip3.7 install .
           pytest tests
           dir: pull-request/phatik-client-py
 
@@ -161,7 +161,7 @@ jobs:
         - "-c"
         - |
           pip3.7 install flake8
-          pip3.7 install -e .
+          pip3.7 install .
           flake8 phatik
         dir: pull-request/phatik-client-py
 
@@ -198,7 +198,7 @@ jobs:
         - |
           apk add gcc libc-dev
           pip3.7 install pylint
-          pip3.7 install -e .
+          pip3.7 install .
           pylint phatik
         dir: pull-request/phatik-client-py
 
