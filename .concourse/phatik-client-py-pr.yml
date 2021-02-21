@@ -31,7 +31,7 @@ resources:
 - name: pull-request
   type: pull-request
   check_every: 24h
-  webhook_token: ((webhook-token))
+  webhook_token: concourse-ci-test
   source:
     repository: tgolsson/concourse-ci-test
     access_token: ((pr-token))
