@@ -78,7 +78,7 @@ jobs:
     passed: [begin-pr]
 
   - put: gh-status
-    inputs: [concourse-ci-test]
+    inputs: [pull-request]
     params: {state: pending}
 
   - task: build-image
@@ -90,12 +90,12 @@ jobs:
         source:
           repository: vito/oci-build-task
       inputs:
-      - name: concourse-ci-test
+      - name: pull-request
       outputs:
       - name: image
       params:
-        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-frontend/Dockerfile
-        CONTEXT: concourse-ci-test
+        DOCKERFILE: pull-request/Dockerfiles/phatik-frontend/Dockerfile
+        CONTEXT: pull-request
       run:
         path: build
 
