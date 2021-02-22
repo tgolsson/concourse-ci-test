@@ -1,0 +1,109 @@
+meta:
+  gh-status_handlers: &gh-status-handlers
+    on_success:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: success }
+    on_failure:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: failure }
+    on_error:
+      put: gh-status
+      inputs: [pull-request]
+      params: { state: error }
+
+resource_types:
+# This manages the GitHub status lines
+- name: cogito
+  type: registry-image
+  check_every: 1m
+  source:
+    repository: ((harbor.image-repo-name))/cogito
+    tag: latest
+
+resources:
+- name: pull-request
+  type: pull-request
+  check_every: 24h
+  webhook_token: concourse-ci-test
+  source:
+    repository: tgolsson/concourse-ci-test
+    access_token: ((pr-token))
+    paths:
+    - phatik-frontend/**
+    - .concourse/phatik-frontend-pr.yml
+
+# This is the status object that will be updated in each job
+- name: gh-status
+  type: cogito
+  check_every: 1h
+  source:
+    owner: tgolsson
+    repo: concourse-ci-test
+    access_token: ((status-token))
+    context_namespace: phatik-frontend
+
+jobs:
+- name: begin-pr
+  plan:
+  - get: pull-request
+    trigger: true
+    version: every
+    params: { list_changed_files: true }
+
+  - task: generate-comment
+    file: .concourse/task-generate-comment.yml
+
+  - put: pull-request
+    params:
+      path: pull-request
+      status: pending
+      context: pull-request
+      base_context: phatik-client-py
+      comment_file: messages/status.txt
+
+- name: build
+  public: true
+
+  <<: *gh-status-handlers
+  plan:
+  - get: pull-request
+    trigger: true
+    passed: [begin-pr]
+
+  - put: gh-status
+    inputs: [concourse-ci-test]
+    params: {state: pending}
+
+  - task: build-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: concourse-ci-test
+      outputs:
+      - name: image
+      params:
+        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-frontend/Dockerfile
+        CONTEXT: concourse-ci-test
+      run:
+        path: build
+
+- name: end-pr
+  plan:
+  - get: pull-request
+    passed: [ build ]
+    trigger: true
+    version: every
+
+  - put: pull-request
+    params:
+      path: pull-request
+      context: pull-request
+      base_context: phatik-client-py
+      status: success
