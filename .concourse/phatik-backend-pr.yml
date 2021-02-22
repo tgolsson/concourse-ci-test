@@ -38,7 +38,7 @@ resources:
     paths:
     - phatik-backend/**
     - Dockerfiles/phatik-backend/**
-    - .concourse/phatik-backend.yml
+    - .concourse/phatik-backend-pr.yml
 
 # This is the status object that will be updated in each job
 - name: gh-status

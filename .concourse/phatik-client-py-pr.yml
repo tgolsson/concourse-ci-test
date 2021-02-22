@@ -37,7 +37,7 @@ resources:
     access_token: ((pr-token))
     paths:
     - phatik-client-py/**
-    - .concourse/phatik-client-py.yml
+    - .concourse/phatik-client-py-pr.yml
 
 # This is the status object that will be updated in each job
 - name: gh-status
