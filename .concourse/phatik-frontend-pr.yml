@@ -22,6 +22,11 @@ resource_types:
     repository: ((harbor.image-repo-name))/cogito
     tag: latest
 
+- name: pull-request
+  type: registry-image
+  source:
+    repository: teliaoss/github-pr-resource
+
 resources:
 - name: pull-request
   type: pull-request
@@ -53,7 +58,7 @@ jobs:
     params: { list_changed_files: true }
 
   - task: generate-comment
-    file: .concourse/task-generate-comment.yml
+    file: pull-request/.concourse/task-generate-comment.yml
 
   - put: pull-request
     params:

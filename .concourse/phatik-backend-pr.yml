@@ -59,7 +59,7 @@ jobs:
     params: { list_changed_files: true }
 
   - task: generate-comment
-    file: .concourse/task-generate-comment.yml
+    file: pull-request/.concourse/task-generate-comment.yml
 
   - put: pull-request
     params:
