@@ -13,7 +13,7 @@ use models::*;
 
 use crate::Db;
 
-pub async fn handle_phatic_message(
+pub async fn handle_phatik_message(
     msg: PhatikMessage,
     database: &Db,
 ) -> Result<Option<PhatikMessage>> {
