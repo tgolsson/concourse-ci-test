@@ -1,0 +1,27 @@
+platform: linux
+image_resource:
+  type: registry-image
+  source: { repository: docker.io/library/alpine }
+run:
+  path: sh
+  args:
+  - -c
+  - |
+    apk add jq
+
+    BASE_COMMIT=$(jq -r '.[] | select(.name == "base_sha").value' pull-request/.git/resource/metadata.json)
+    COMMIT=$(jq -r '.[] | select(.name == "head_sha").value'  pull-request/.git/resource/metadata.json)
+
+    cat << EOF > messages/status.txt
+    Attempting merge of commit $COMMIT with base $BASE_COMMIT.
+
+    Changed files:
+    \`\`\`
+    $(cat pull-request/.git/resource/changed_files)
+    \`\`\`
+    EOF
+    cat messages/status.txt
+inputs:
+- name: pull-request
+outputs:
+- name: messages

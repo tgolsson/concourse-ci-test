@@ -38,7 +38,7 @@ resources:
     paths:
     - phatik-backend/**
     - Dockerfiles/phatik-backend/**
-    - .concourse/phatik-backend.yml
+    - .concourse/phatik-backend-pr.yml
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -59,37 +59,7 @@ jobs:
     params: { list_changed_files: true }
 
   - task: generate-comment
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/alpine }
-
-      run:
-        path: sh
-        args:
-        - -c
-        - |
-          apk add jq
-          cat pull-request/.git/resource/metadata.json
-          cat pull-request/.git/resource/version.json
-          cat pull-request/.git/resource/changed_files
-          BASE_COMMIT=$(jq -r '.[] | select(.name == "base_sha").value' pull-request/.git/resource/metadata.json)
-          COMMIT=$(jq -r '.[] | select(.name == "head_sha").value'  pull-request/.git/resource/metadata.json)
-          cat << EOF > messages/status.txt
-          Attempting merge of commit $COMMIT with base $BASE_COMMIT.
-
-          Changed files:
-          \`\`\`
-          $(cat pull-request/.git/resource/changed_files)
-          \`\`\`
-          EOF
-
-          cat messages/status.txt
-      inputs:
-      - name: pull-request
-      outputs:
-      - name: messages
+    file: pull-request/.concourse/task-generate-comment.yml
 
   - put: pull-request
     params:

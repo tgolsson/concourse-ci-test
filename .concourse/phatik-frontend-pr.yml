@@ -36,8 +36,8 @@ resources:
     repository: tgolsson/concourse-ci-test
     access_token: ((pr-token))
     paths:
-    - phatik-client-py/**
-    - .concourse/phatik-client-py-pr.yml
+    - phatik-frontend/**
+    - .concourse/phatik-frontend-pr.yml
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -47,7 +47,7 @@ resources:
     owner: tgolsson
     repo: concourse-ci-test
     access_token: ((status-token))
-    context_namespace: phatik-client-py
+    context_namespace: phatik-frontend
 
 jobs:
 - name: begin-pr
@@ -68,119 +68,41 @@ jobs:
       base_context: phatik-client-py
       comment_file: messages/status.txt
 
-- name: test
+- name: build
   public: true
 
   <<: *gh-status-handlers
   plan:
   - get: pull-request
     trigger: true
-    version: every
     passed: [begin-pr]
 
   - put: gh-status
     inputs: [pull-request]
-    params: { state: pending }
+    params: {state: pending}
 
-  - task: test
+  - task: build-image
+    privileged: true
     config:
       platform: linux
       image_resource:
         type: registry-image
-        source: { repository: docker.io/library/python, tag: 3.7-alpine }
-
-      run:
-        path: sh
-        args:
-        - "-c"
-        - |
-          pip3.7 install pytest
-          pip3.7 install .
-          pytest tests
-        dir: pull-request/phatik-client-py
-
+        source:
+          repository: vito/oci-build-task
       inputs:
       - name: pull-request
       outputs:
-      - name: pull-request
-
-- name: flake8
-  public: true
-
-  <<: *gh-status-handlers
-  plan:
-  - get: pull-request
-    trigger: true
-    version: every
-    passed: [begin-pr]
-
-  - put: gh-status
-    inputs: [pull-request]
-    params: { state: pending }
-
-  - task: test
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/python, tag: 3.7-alpine }
-
+      - name: image
+      params:
+        DOCKERFILE: pull-request/Dockerfiles/phatik-frontend/Dockerfile
+        CONTEXT: pull-request
       run:
-        path: sh
-        args:
-        - "-c"
-        - |
-          pip3.7 install flake8
-          pip3.7 install .
-          flake8 phatik
-        dir: pull-request/phatik-client-py
-
-      inputs:
-      - name: pull-request
-      outputs:
-      - name: pull-request
-
-- name: pylint
-  public: true
-
-  <<: *gh-status-handlers
-  plan:
-  - get: pull-request
-    trigger: true
-    version: every
-    passed: [begin-pr]
-
-  - put: gh-status
-    inputs: [pull-request]
-    params: { state: pending }
-
-  - task: test
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: docker.io/library/python, tag: 3.7-alpine }
-
-      run:
-        path: sh
-        args:
-        - "-c"
-        - |
-          apk add gcc libc-dev
-          pip3.7 install pylint
-          pip3.7 install .
-          pylint phatik
-        dir: pull-request/phatik-client-py
-
-      inputs:
-      - name: pull-request
-      outputs:
-      - name: pull-request
+        path: build
 
 - name: end-pr
   plan:
   - get: pull-request
-    passed: [ pylint, flake8, test]
+    passed: [ build ]
     trigger: true
     version: every
 
