@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
-pub enum PhaticMessage {
+pub enum PhatikMessage {
     Status(Event),
     Request(ListOptions),
     StatusList(EventList),

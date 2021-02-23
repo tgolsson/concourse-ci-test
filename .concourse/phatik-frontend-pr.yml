@@ -31,9 +31,9 @@ resources:
 - name: pull-request
   type: pull-request
   check_every: 24h
-  webhook_token: concourse-ci-test
+  webhook_token: phatik
   source:
-    repository: tgolsson/concourse-ci-test
+    repository: tgolsson/phatik
     access_token: ((pr-token))
     paths:
     - phatik-frontend/**
@@ -45,7 +45,7 @@ resources:
   check_every: 1h
   source:
     owner: tgolsson
-    repo: concourse-ci-test
+    repo: phatik
     access_token: ((status-token))
     context_namespace: phatik-frontend
 
@@ -65,7 +65,7 @@ jobs:
       path: pull-request
       status: pending
       context: pull-request
-      base_context: phatik-client-py
+      base_context: phatik-frontend
       comment_file: messages/status.txt
 
 - name: build

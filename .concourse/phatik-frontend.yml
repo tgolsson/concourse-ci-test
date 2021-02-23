@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: success}
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: failure}
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: error}
 
 
@@ -27,12 +27,15 @@ resource_types:
 
 resources:
 # The repo with our Dockerfile
-- name: concourse-ci-test
+- name: phatik
   type: git
   icon: github
   source:
-    uri: https://github.com/tgolsson/concourse-ci-test.git
+    uri: https://github.com/tgolsson/phatik.git
     branch: main
+    paths:
+    - phatik-frontend/**
+    - .concourse/phatik-frontend.yml
 
 # Where we will push the image
 - name: phatik-frontend
@@ -50,7 +53,7 @@ resources:
   check_every: 1h
   source:
     owner: tgolsson
-    repo: concourse-ci-test
+    repo: phatik
     access_token: ((status-token))
     context_namespace: phatik-frontend
 
@@ -60,11 +63,11 @@ jobs:
 
   <<: *gh-status-handlers
   plan:
-  - get: concourse-ci-test
+  - get: phatik
     trigger: true
 
   - put: gh-status
-    inputs: [concourse-ci-test]
+    inputs: [phatik]
     params: {state: pending}
 
   - task: build-task-image
@@ -76,12 +79,12 @@ jobs:
         source:
           repository: vito/oci-build-task
       inputs:
-      - name: concourse-ci-test
+      - name: phatik
       outputs:
       - name: image
       params:
-        DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-frontend/Dockerfile
-        CONTEXT: concourse-ci-test
+        DOCKERFILE: phatik/Dockerfiles/phatik-frontend/Dockerfile
+        CONTEXT: phatik
       run:
         path: build
 

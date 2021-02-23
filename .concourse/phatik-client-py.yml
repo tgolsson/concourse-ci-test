@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: success }
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: failure }
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: error }
 
 resource_types:
@@ -23,11 +23,11 @@ resource_types:
       tag: latest
 
 resources:
-  - name: concourse-ci-test
+  - name: phatik
     type: git
     icon: github
     source:
-      uri: https://github.com/tgolsson/concourse-ci-test
+      uri: https://github.com/tgolsson/phatik
       paths:
         - phatik-client-py/**
         - .concourse/phatik-client-py.yml
@@ -38,7 +38,7 @@ resources:
     check_every: 1h
     source:
       owner: tgolsson
-      repo: concourse-ci-test
+      repo: phatik
       access_token: ((status-token))
       context_namespace: phatik-client-py
 
@@ -48,11 +48,11 @@ jobs:
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
 
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: test
@@ -70,22 +70,22 @@ jobs:
               pip3.7 install pytest
               pip3.7 install -e .
               pytest tests
-            dir: concourse-ci-test/phatik-client-py
+            dir: phatik/phatik-client-py
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
           outputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: flake8
     public: true
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: test
@@ -103,22 +103,22 @@ jobs:
               pip3.7 install flake8
               pip3.7 install -e .
               flake8 phatik
-            dir: concourse-ci-test/phatik-client-py
+            dir: phatik/phatik-client-py
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
           outputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: pylint
     public: true
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: test
@@ -137,9 +137,9 @@ jobs:
               pip3.7 install pylint
               pip3.7 install -e .
               pylint phatik
-            dir: concourse-ci-test/phatik-client-py
+            dir: phatik/phatik-client-py
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
           outputs:
-            - name: concourse-ci-test
+            - name: phatik

@@ -34,7 +34,7 @@ def post(endpoint: str,
          tags: List[str],) -> bool:
     '''Post a Status to the Phatik backend
 
-    :param endpoint: Pathik server to query, including protocol
+    :param endpoint: Phatik server to query, including protocol
     :param message: primary message of the status
     :param app: app producing this status
     :param tags: list of tags for this status
@@ -56,7 +56,7 @@ def post(endpoint: str,
 def get(endpoint: str, count: int, min_id: id) -> StatusList:
     '''Retrieve a number of statuses from the Phatik backend
 
-    :param endpoint: Pathik server to query, including protocol
+    :param endpoint: Phatik server to query, including protocol
     :param count: number of events to retrieve
     :param min_id: minimum id to retrieve'''
     queries = {

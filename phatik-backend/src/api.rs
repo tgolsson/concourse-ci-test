@@ -14,28 +14,28 @@ use models::*;
 use crate::Db;
 
 pub async fn handle_phatic_message(
-    msg: PhaticMessage,
+    msg: PhatikMessage,
     database: &Db,
-) -> Result<Option<PhaticMessage>> {
+) -> Result<Option<PhatikMessage>> {
     let conn = database.lock().await;
     Ok(match msg {
-        PhaticMessage::TagList(..) | PhaticMessage::StatusList(..) => Some(msg),
+        PhatikMessage::TagList(..) | PhatikMessage::StatusList(..) => Some(msg),
 
-        PhaticMessage::Request(ListOptions { last_id, limit }) => {
+        PhatikMessage::Request(ListOptions { last_id, limit }) => {
             let (max_id, events) =
                 conn.events_after_id(last_id.unwrap_or(-1), limit.unwrap_or(100))?;
-            let message = PhaticMessage::StatusList(EventList {
+            let message = PhatikMessage::StatusList(EventList {
                 events,
                 last_id: max_id,
             });
             Some(message)
         }
 
-        PhaticMessage::TagRequest(..) => {
+        PhatikMessage::TagRequest(..) => {
             let tags = conn.all_tags()?;
-            Some(PhaticMessage::TagList(TagList { tags }))
+            Some(PhatikMessage::TagList(TagList { tags }))
         }
-        PhaticMessage::Status(mut event) => {
+        PhatikMessage::Status(mut event) => {
             let tags = event
                 .tags
                 .drain(..)
@@ -60,9 +60,9 @@ pub fn mount(app: &mut tide::Server<Db>) {
         |request: Request<Db>, mut stream| async move {
             let store = request.state().clone();
             while let Some(Ok(Message::Text(incoming))) = stream.next().await {
-                let p: PhaticMessage = deserialize(&incoming).unwrap();
+                let p: PhatikMessage = deserialize(&incoming).unwrap();
 
-                if let Some(res) = handle_phatic_message(p, &store).await? {
+                if let Some(res) = handle_phatik_message(p, &store).await? {
                     // let msg = Message::text(&serialize(&res)?);
 
                     stream.send_json(&res).await?;

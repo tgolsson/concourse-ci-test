@@ -33,7 +33,7 @@ resources:
   check_every: 24h
   webhook_token: concourse-ci-test
   source:
-    repository: tgolsson/concourse-ci-test
+    repository: tgolsson/phatik
     access_token: ((pr-token))
     paths:
     - phatik-client-py/**
@@ -45,7 +45,7 @@ resources:
   check_every: 1h
   source:
     owner: tgolsson
-    repo: concourse-ci-test
+    repo: phatik
     access_token: ((status-token))
     context_namespace: phatik-client-py
 

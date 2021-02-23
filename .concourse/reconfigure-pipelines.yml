@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: success}
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: failure}
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: {state: error}
 
 
@@ -35,13 +35,13 @@ resource_types:
 
 resources:
 # This is our Git Repository
-- name: concourse-ci-test
+- name: phatik
   type: git
   icon: github
   source:
-    uri: https://github.com/tgolsson/concourse-ci-test
+    uri: https://github.com/tgolsson/phatik
   # NOT a secret, used to map webhooks -> checks
-  webhook_token: concourse-ci-test
+  webhook_token: phatik
 
 # This is the status object that will be updated in each job
 - name: gh-status
@@ -49,7 +49,7 @@ resources:
   check_every: 1h
   source:
     owner: tgolsson
-    repo: concourse-ci-test
+    repo: phatik
     access_token: ((status-token))
     context_namespace: controller
 
@@ -65,61 +65,61 @@ jobs:
 - name: configure-webhook
   <<: *gh-status-handlers
   plan:
-  - get: concourse-ci-test
+  - get: phatik
     trigger: true
 
   - put: gh-status
-    inputs: [concourse-ci-test]
+    inputs: [phatik]
     params: {state: pending}
 
   - put: create-webhook
     resource: github-webhook
     params:
       org: tgolsson
-      repo: concourse-ci-test
-      resource_name: concourse-ci-test
-      webhook_token: concourse-ci-test
+      repo: phatik
+      resource_name: phatik
+      webhook_token: phatik
       operation: create
       events: [push, pull_request]
 
 - name: configure-controller
   <<: *gh-status-handlers
   plan:
-  - get: concourse-ci-test
+  - get: phatik
     trigger: true
 
   - put: gh-status
-    inputs: [concourse-ci-test]
+    inputs: [phatik]
     params: {state: pending}
 
   - set_pipeline: self
-    file: concourse-ci-test/.concourse/reconfigure-pipelines.yml
+    file: phatik/.concourse/reconfigure-pipelines.yml
 
 - name: configure-pipelines
   <<: *gh-status-handlers
   plan:
-  - get: concourse-ci-test
+  - get: phatik
     passed: [configure-controller,configure-webhook]
     trigger: true
 
   - put: gh-status
-    inputs: [concourse-ci-test]
+    inputs: [phatik]
     params: {state: pending}
 
   - set_pipeline: phatik-frontend
-    file: concourse-ci-test/.concourse/phatik-frontend.yml
+    file: phatik/.concourse/phatik-frontend.yml
 
   - set_pipeline: phatik-frontend-pr
-    file: concourse-ci-test/.concourse/phatik-frontend-pr.yml
+    file: phatik/.concourse/phatik-frontend-pr.yml
 
   - set_pipeline: phatik-backend
-    file: concourse-ci-test/.concourse/phatik-backend.yml
+    file: phatik/.concourse/phatik-backend.yml
 
   - set_pipeline: phatik-backend-pr
-    file: concourse-ci-test/.concourse/phatik-backend-pr.yml
+    file: phatik/.concourse/phatik-backend-pr.yml
 
   - set_pipeline: phatik-client-py
-    file: concourse-ci-test/.concourse/phatik-client-py.yml
+    file: phatik/.concourse/phatik-client-py.yml
 
   - set_pipeline: phatik-client-py-pr
-    file: concourse-ci-test/.concourse/phatik-client-py-pr.yml
+    file: phatik/.concourse/phatik-client-py-pr.yml
