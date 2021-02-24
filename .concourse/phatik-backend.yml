@@ -2,15 +2,15 @@ meta:
   gh-status_handlers: &gh-status-handlers
     on_success:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: success }
     on_failure:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: failure }
     on_error:
       put: gh-status
-      inputs: [concourse-ci-test]
+      inputs: [phatik]
       params: { state: error }
 
 resource_types:
@@ -23,11 +23,11 @@ resource_types:
       tag: latest
 
 resources:
-  - name: concourse-ci-test
+  - name: phatik
     type: git
     icon: github
     source:
-      uri: https://github.com/tgolsson/concourse-ci-test
+      uri: https://github.com/tgolsson/phatik
       paths:
         - phatik-backend/**
         - Dockerfiles/phatik-backend/**
@@ -51,7 +51,7 @@ resources:
     check_every: 1h
     source:
       owner: tgolsson
-      repo: concourse-ci-test
+      repo: phatik
       access_token: ((status-token))
       context_namespace: phatik-backend
 
@@ -61,11 +61,11 @@ jobs:
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
         passed: [clippy, rustfmt, test]
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: build
@@ -78,23 +78,23 @@ jobs:
           run:
             path: cargo
             args: ["build"]
-            dir: concourse-ci-test/phatik-backend
+            dir: phatik/phatik-backend
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
           outputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: test
     public: true
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
 
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: test
@@ -107,20 +107,20 @@ jobs:
           run:
             path: cargo
             args: ["test"]
-            dir: concourse-ci-test/phatik-backend
+            dir: phatik/phatik-backend
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: clippy
     public: true
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
 
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: clippy
@@ -137,20 +137,20 @@ jobs:
               - |
                 rustup component add clippy
                 cargo clippy
-            dir: concourse-ci-test/phatik-backend
+            dir: phatik/phatik-backend
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: rustfmt
     public: true
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
 
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: fmt
@@ -167,22 +167,22 @@ jobs:
               - |
                 rustup component add rustfmt
                 cargo fmt -- --check
-            dir: concourse-ci-test/phatik-backend
+            dir: phatik/phatik-backend
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
 
   - name: publish
     public: true
 
     <<: *gh-status-handlers
     plan:
-      - get: concourse-ci-test
+      - get: phatik
         trigger: true
         passed: [clippy, rustfmt, test, build]
 
       - put: gh-status
-        inputs: [concourse-ci-test]
+        inputs: [phatik]
         params: { state: pending }
 
       - task: build-release
@@ -199,10 +199,10 @@ jobs:
               - |
                 cargo build --release
                 cp ./target/release/phatik-backend ../../phatik-backend-binary/phatik-backend
-            dir: concourse-ci-test/phatik-backend
+            dir: phatik/phatik-backend
 
           inputs:
-            - name: concourse-ci-test
+            - name: phatik
           outputs:
             - name: phatik-backend-binary
 
@@ -217,13 +217,13 @@ jobs:
 
           inputs:
             - name: phatik-backend-binary
-            - name: concourse-ci-test
+            - name: phatik
 
           outputs:
             - name: image
           params:
             CONTEXT: .
-            DOCKERFILE: concourse-ci-test/Dockerfiles/phatik-backend/Dockerfile
+            DOCKERFILE: phatik/Dockerfiles/phatik-backend/Dockerfile
           run:
             path: build
 

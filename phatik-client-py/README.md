@@ -6,7 +6,7 @@ This is a Python implementation of a Phatik client, for embedding inside other P
 
 
 ``` python
-pip install "git+https://github.com/tgolsson/concourse-ci-test#egg=phatik-client-py&subdirectory=phatik-client-py
+pip install "git+https://github.com/tgolsson/phatik#egg=phatik-client-py&subdirectory=phatik-client-py
 ```
 
 ## Requirements

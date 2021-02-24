@@ -74,7 +74,7 @@
                 <v-card-title>Help</v-card-title>
                 <v-card-text>
                     To add data to Phatik, either use one of our
-                    <a href="https://github.com/tgolsson/concourse-ci-test.git"
+                    <a href="https://github.com/tgolsson/phatik.git"
                         >prebuilt libraries</a
                     >, or make a POST request to the endpoint `/api/status`.
                 </v-card-text>

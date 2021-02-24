@@ -8,7 +8,7 @@ COPY phatik-frontend/package.json phatik-frontend/package-lock.json /app/
 RUN npm install --registry ${NPM_REGISTRY}
 
 # Do build
-COPY phatik-frontend/*.js phatik-frontend/*.json phatik-frontend/index.html /app/
+COPY phatik-frontend/*.js phatik-frontend/*.json  /app/
 COPY phatik-frontend/src /app/src
 COPY phatik-frontend/public /app/public
 RUN npm run build

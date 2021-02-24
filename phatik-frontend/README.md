@@ -1,6 +1,6 @@
-# phatic-frontend
+# phatik-frontend
 
-> frontend for phatic
+> frontend for phatik
 
 ## Build Setup
 

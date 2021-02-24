@@ -5,8 +5,7 @@ https://packaging.python.org/guides/distributing-packages-using-setuptools/
 https://github.com/pypa/sampleproject
 '''
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
+from setuptools import setup
 import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
@@ -24,7 +23,7 @@ setup(
 
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
-    url='https://github.com/tgolsson/concourse-ci-test',
+    url='https://github.com/tgolsson/phatik',
     author='Tom Solberg',  # Optional
     author_email='me@sbg.dev',  # Optional
 
@@ -50,7 +49,7 @@ setup(
     },
 
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/tgolsson/concourse-ci-test/issues',
-        'Source': 'https://github.com/tgolsson/concourse-ci-test/',
+        'Bug Reports': 'https://github.com/tgolsson/phatik/issues',
+        'Source': 'https://github.com/tgolsson/phatik/',
     },
 )
