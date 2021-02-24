@@ -110,5 +110,5 @@ jobs:
     params:
       path: pull-request
       context: pull-request
-      base_context: phatik-client-py
+      base_context: phatik-frontend
       status: success
